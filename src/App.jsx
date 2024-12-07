@@ -13,7 +13,7 @@ function App() {
 
   // Fetch and parse the Excel data
   useEffect(() => {
-    fetch('/consolidated_data.xlsx')
+    fetch(import.meta.env.BASE_URL + '/consolidated_data.xlsx')
       .then(res => res.arrayBuffer())
       .then(buffer => {
         const workbook = XLSX.read(buffer, { type: 'array' });
