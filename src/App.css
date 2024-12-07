@@ -1,0 +1,17 @@
+/* src/App.css */
+
+.App {
+  display: flex;
+  flex-direction: row;
+}
+
+.info-panel {
+  width: 400px;
+  padding: 20px;
+  overflow-y: auto;
+  background-color: #f9f9f9;
+}
+
+.info-panel h2 {
+  margin-top: 0;
+}
