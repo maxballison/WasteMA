@@ -10,7 +10,7 @@ function MassachusettsMap({ onMunicipalityClick }) {
 
   // Fetch GeoJSON data
   useEffect(() => {
-    fetch('/mass-municipalities.geojson')
+    fetch(import.meta.env.BASE_URL + '/mass-municipalities.geojson')
       .then(response => response.json())
       .then(data => setGeoData(data))
       .catch(error => console.error('Error fetching GeoJSON data:', error));
