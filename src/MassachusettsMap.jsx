@@ -1,4 +1,4 @@
-// src/components/MassachusettsMap.js
+// src/MassachusettsMap.js
 
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';

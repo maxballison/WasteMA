@@ -1,4 +1,4 @@
-// src/components/WasteManagementInfo.js
+// src/WasteManagementInfo.js
 
 import React from 'react';
 
