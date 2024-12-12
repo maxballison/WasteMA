@@ -2,16 +2,20 @@
 
 .App {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
+  height: 100vh;
+}
+
+body {
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
 }
 
 .info-panel {
-  width: 400px;
-  padding: 20px;
   overflow-y: auto;
-  background-color: #f9f9f9;
 }
 
-.info-panel h2 {
-  margin-top: 0;
+.leaflet-container {
+  width: 100%;
+  height: 100%;
 }
