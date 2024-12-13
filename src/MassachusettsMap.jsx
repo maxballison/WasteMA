@@ -12,6 +12,10 @@ function MassachusettsMap({ onMunicipalityClick, excelData }) {
   const [geoData, setGeoData] = useState(null);
   const theme = useTheme();
 
+  // Fixed income domain bounds
+  const minIncome = 0;
+  const maxIncome = 100000;
+
   // Fetch GeoJSON data
   useEffect(() => {
     fetch(import.meta.env.BASE_URL + '/mass-municipalities.geojson')
@@ -20,28 +24,29 @@ function MassachusettsMap({ onMunicipalityClick, excelData }) {
       .catch((error) => console.error('Error fetching GeoJSON data:', error));
   }, []);
 
-  // Function to get the color based on the percentage of non-white population
+  // Function to get the color based on "DOR Income Per Capita"
   const getFillColor = (municipalityName) => {
+    if (!excelData) return '#ccc';
+
     const municipalityData = excelData.find(
       (item) => item.Municipality.toUpperCase() === municipalityName.toUpperCase()
     );
 
-    if (municipalityData && municipalityData.nhwhi_p !== undefined) {
-      const whitePercentage = parseFloat(municipalityData.nhwhi_p);
-      if (isNaN(whitePercentage)) {
+    if (municipalityData && municipalityData['DOR Income Per Capita'] !== undefined) {
+      const incomePerCapita = parseFloat(municipalityData['DOR Income Per Capita']);
+      if (isNaN(incomePerCapita)) {
         return '#ccc'; // Default color if data is invalid
       }
-      const nonWhitePercentage = 100 - whitePercentage; // Calculate non-white percentage
-      return getColor(nonWhitePercentage);
+      return getColor(incomePerCapita);
     } else {
       return '#ccc'; // Default color if data is missing
     }
   };
 
-  // Function to map percentage to a color
+  // Function to map income per capita to a color
   const getColor = (d) => {
-    // Create a chroma scale from light to dark
-    const scale = chroma.scale(['#dcf0fb', '#081d58']).domain([0, 100]);
+    // Create a chroma scale from a light blue to a dark blue using a fixed domain
+    const scale = chroma.scale(['#dcf0fb', '#081d58']).domain([minIncome, maxIncome]);
     return scale(d).hex();
   };
 
@@ -85,30 +90,34 @@ function MassachusettsMap({ onMunicipalityClick, excelData }) {
     const map = useMap();
 
     useEffect(() => {
-      const legend = L.control({ position: 'bottomleft' });
+      if (map) {
+        const legend = L.control({ position: 'bottomleft' });
 
-      legend.onAdd = () => {
-        const div = L.DomUtil.create('div', 'info legend');
+        legend.onAdd = () => {
+          const div = L.DomUtil.create('div', 'info legend');
 
-        // Create a gradient bar
-        div.innerHTML = `
-          <div class="legend-title">Percentage of Non-White Population</div>
-          <div class="legend-bar"></div>
-          <div class="legend-labels">
-            <span>0%</span>
-            <span>50%</span>
-            <span>100%</span>
-          </div>
-        `;
-        return div;
-      };
+          // Define intermediate value for midpoint
+          const midIncome = (minIncome + maxIncome) / 2;
 
-      legend.addTo(map);
+          div.innerHTML = `
+            <div class="legend-title">DOR Income Per Capita</div>
+            <div class="legend-bar"></div>
+            <div class="legend-labels">
+              <span>${Math.round(minIncome)}</span>
+              <span>${Math.round(midIncome)}</span>
+              <span>${Math.round(maxIncome)}</span>
+            </div>
+          `;
+          return div;
+        };
 
-      // Cleanup function to remove legend on component unmount
-      return () => {
-        legend.remove();
-      };
+        legend.addTo(map);
+
+        // Cleanup function to remove legend on component unmount
+        return () => {
+          legend.remove();
+        };
+      }
     }, [map]);
 
     return null;
