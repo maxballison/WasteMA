@@ -14,7 +14,7 @@ function MassachusettsMap({ onMunicipalityClick, excelData }) {
 
   // Fixed income domain bounds
   const minIncome = 0;
-  const maxIncome = 100000;
+  const maxIncome = 300000;
 
   // Fetch GeoJSON data
   useEffect(() => {
@@ -32,8 +32,8 @@ function MassachusettsMap({ onMunicipalityClick, excelData }) {
       (item) => item.Municipality.toUpperCase() === municipalityName.toUpperCase()
     );
 
-    if (municipalityData && municipalityData['DOR Income Per Capita'] !== undefined) {
-      const incomePerCapita = parseFloat(municipalityData['DOR Income Per Capita']);
+    if (municipalityData && municipalityData['EQV Per Capita'] !== undefined) {
+      const incomePerCapita = parseFloat(municipalityData['EQV Per Capita']);
       if (isNaN(incomePerCapita)) {
         return '#ccc'; // Default color if data is invalid
       }
@@ -100,7 +100,7 @@ function MassachusettsMap({ onMunicipalityClick, excelData }) {
           const midIncome = (minIncome + maxIncome) / 2;
 
           div.innerHTML = `
-            <div class="legend-title">DOR Income Per Capita</div>
+            <div class="legend-title">EQV Per Capita</div>
             <div class="legend-bar"></div>
             <div class="legend-labels">
               <span>${Math.round(minIncome)}</span>

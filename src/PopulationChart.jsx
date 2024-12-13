@@ -60,7 +60,7 @@ function PopulationChart({ data }) {
           <Legend />
         </PieChart>
       </ResponsiveContainer>
-      <Typography>Average Individual Yearly Income: <strong>{formatToMoney(parseInt(data['DOR Income Per Capita']))}</strong></Typography>
+      <Typography>Average Property Value Per Capita: <strong>{formatToMoney(parseInt(data['EQV Per Capita']))}</strong></Typography>
     </Box>
   );
 }
