@@ -62,7 +62,7 @@ function App() {
       <AppBar position="fixed" sx={{ backgroundColor: 'white', color: 'black' }}>
         <Toolbar>
           <Typography variant="h6" component="div">
-            Massachusetts Municipalities Data
+            Massachusetts Waste Management Dashboard
           </Typography>
         </Toolbar>
       </AppBar>
