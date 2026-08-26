@@ -1,22 +1,50 @@
-// src/MassachusettsMap.js
+// src/MassachusettsMap.jsx
+// Leaflet choropleth of Massachusetts municipalities. Colors are driven by
+// the currently-selected metric; hovering shows a tooltip, clicking opens
+// the detail panel. The selected town's outline is drawn on its own
+// non-interactive pane above the choropleth, so it can never be covered by
+// (or interfere with) hover events on neighboring polygons.
 
-import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
+import { useState, useEffect, useMemo } from 'react';
+import { MapContainer, TileLayer, GeoJSON, Pane } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import './MassachusettsMap.css';
-import { useTheme } from '@mui/material/styles';
-import L from 'leaflet';
-import chroma from 'chroma-js';
+import { METRICS, makeScale, titleCase } from './metrics';
 
-function MassachusettsMap({ onMunicipalityClick, excelData }) {
+const NO_DATA_COLOR = '#e2e8f0';
+
+function Legend({ metric, domain }) {
+  const colors = metric.reverse ? [...metric.colors].reverse() : metric.colors;
+  const gradient = `linear-gradient(to right, ${colors.join(', ')})`;
+  const [lo, hi] = domain;
+  const mid = (lo + hi) / 2;
+
+  return (
+    <div className="map-legend">
+      <div className="map-legend-title">{metric.label}</div>
+      <div className="map-legend-bar" style={{ background: gradient }} />
+      <div className="map-legend-labels">
+        <span>{metric.format(lo)}</span>
+        <span>{metric.format(mid)}</span>
+        <span>{metric.format(hi)}</span>
+      </div>
+      <div className="map-legend-nodata">
+        <span className="map-legend-swatch" /> No data
+      </div>
+    </div>
+  );
+}
+
+function MassachusettsMap({ lookup, metricId, domains, onMunicipalityClick, selectedName }) {
   const [geoData, setGeoData] = useState(null);
-  const theme = useTheme();
 
-  // Fixed income domain bounds
-  const minIncome = 0;
-  const maxIncome = 300000;
+  const metric = METRICS[metricId];
+  const domain = domains?.[metricId] ?? [0, 1];
+  const scale = useMemo(
+    () => makeScale(METRICS[metricId], domains?.[metricId] ?? [0, 1]),
+    [metricId, domains]
+  );
 
-  // Fetch GeoJSON data
   useEffect(() => {
     fetch(import.meta.env.BASE_URL + '/mass-municipalities.geojson')
       .then((response) => response.json())
@@ -24,60 +52,38 @@ function MassachusettsMap({ onMunicipalityClick, excelData }) {
       .catch((error) => console.error('Error fetching GeoJSON data:', error));
   }, []);
 
-  // Function to get the color based on "DOR Income Per Capita"
-  const getFillColor = (municipalityName) => {
-    if (!excelData) return '#ccc';
+  const getRow = (feature) =>
+    lookup?.get(String(feature.properties.massgis_name || '').toUpperCase()) ?? null;
 
-    const municipalityData = excelData.find(
-      (item) => item.Municipality.toUpperCase() === municipalityName.toUpperCase()
+  const getFillColor = (feature) => {
+    const row = getRow(feature);
+    const value = row ? metric.value(row) : null;
+    return value === null ? NO_DATA_COLOR : scale(value).hex();
+  };
+
+  const style = (feature) => ({
+    weight: 0.8,
+    color: '#94a3b8',
+    fillColor: getFillColor(feature),
+    fillOpacity: 0.82,
+  });
+
+  const onEachFeature = (feature, layer) => {
+    const name = String(feature.properties.massgis_name || '').toUpperCase();
+    const row = getRow(feature);
+    const value = row ? metric.value(row) : null;
+
+    layer.bindTooltip(
+      `<div class="muni-tooltip"><strong>${titleCase(name)}</strong><br/>${
+        metric.shortLabel
+      }: ${metric.format(value)}</div>`,
+      { sticky: true, direction: 'top', opacity: 1 }
     );
 
-    if (municipalityData && municipalityData['EQV Per Capita'] !== undefined) {
-      const incomePerCapita = parseFloat(municipalityData['EQV Per Capita']);
-      if (isNaN(incomePerCapita)) {
-        return '#ccc'; // Default color if data is invalid
-      }
-      return getColor(incomePerCapita);
-    } else {
-      return '#ccc'; // Default color if data is missing
-    }
-  };
-
-  // Function to map income per capita to a color
-  const getColor = (d) => {
-    // Create a chroma scale from a light blue to a dark blue using a fixed domain
-    const scale = chroma.scale(['#dcf0fb', '#081d58']).domain([minIncome, maxIncome]);
-    return scale(d).hex();
-  };
-
-  // Style function for GeoJSON features
-  const style = (feature) => {
-    const municipalityName = feature.properties.massgis_name;
-    return {
-      weight: 1,
-      color: '#666',
-      fillColor: getFillColor(municipalityName),
-      fillOpacity: 0.7,
-    };
-  };
-
-  // Event handlers for each feature
-  const onEachFeature = (feature, layer) => {
     layer.on({
-      click: () => {
-        onMunicipalityClick(feature);
-      },
+      click: () => onMunicipalityClick(feature),
       mouseover: () => {
-        const originalFillColor = getFillColor(feature.properties.massgis_name);
-        const hoverFillColor = chroma(originalFillColor).brighten(0.5).hex();
-
-        layer.setStyle({
-          weight: 2,
-          color: 'white',
-          fillColor: hoverFillColor,
-          fillOpacity: 0.9,
-        });
-        layer.bringToFront();
+        layer.setStyle({ weight: 2, color: '#334155', fillOpacity: 0.95 });
       },
       mouseout: () => {
         layer.setStyle(style(feature));
@@ -85,59 +91,55 @@ function MassachusettsMap({ onMunicipalityClick, excelData }) {
     });
   };
 
-  // Legend Component
-  function Legend() {
-    const map = useMap();
-
-    useEffect(() => {
-      if (map) {
-        const legend = L.control({ position: 'bottomleft' });
-
-        legend.onAdd = () => {
-          const div = L.DomUtil.create('div', 'info legend');
-
-          // Define intermediate value for midpoint
-          const midIncome = (minIncome + maxIncome) / 2;
-
-          div.innerHTML = `
-            <div class="legend-title">EQV Per Capita</div>
-            <div class="legend-bar"></div>
-            <div class="legend-labels">
-              <span>${Math.round(minIncome)}</span>
-              <span>${Math.round(midIncome)}</span>
-              <span>${Math.round(maxIncome)}</span>
-            </div>
-          `;
-          return div;
-        };
-
-        legend.addTo(map);
-
-        // Cleanup function to remove legend on component unmount
-        return () => {
-          legend.remove();
-        };
-      }
-    }, [map]);
-
-    return null;
-  }
+  // The selected municipality's geometry, rendered as a separate outline.
+  const selectedFeature = useMemo(() => {
+    if (!geoData || !selectedName) return null;
+    return (
+      geoData.features.find(
+        (f) =>
+          String(f.properties.massgis_name || '').toUpperCase() ===
+          selectedName.toUpperCase()
+      ) ?? null
+    );
+  }, [geoData, selectedName]);
 
   return (
-    <MapContainer
-      center={[42.4072, -71.3824]}
-      zoom={8}
-      style={{ height: 'calc(100vh - 64px)', width: '100%' }}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
-        url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-      />
-      {geoData && (
-        <GeoJSON data={geoData} style={style} onEachFeature={onEachFeature} />
-      )}
-      <Legend />
-    </MapContainer>
+    <div className="map-wrapper">
+      <MapContainer
+        center={[42.16, -71.72]}
+        zoom={9}
+        zoomSnap={0.5}
+        style={{ height: '100%', width: '100%' }}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+        />
+        {geoData && (
+          // Remount only when the metric (or data availability) changes, so
+          // styles and tooltips are rebuilt against the new metric.
+          <GeoJSON
+            key={`${metricId}-${lookup ? lookup.size : 0}`}
+            data={geoData}
+            style={style}
+            onEachFeature={onEachFeature}
+          />
+        )}
+        {/* Selection outline: own pane above the choropleth (overlayPane is
+            z-index 400), non-interactive so all mouse events pass through. */}
+        <Pane name="selection-outline" style={{ zIndex: 450 }}>
+          {selectedFeature && (
+            <GeoJSON
+              key={selectedName}
+              data={selectedFeature}
+              interactive={false}
+              style={{ weight: 3, color: '#0f172a', fill: false }}
+            />
+          )}
+        </Pane>
+      </MapContainer>
+      <Legend metric={metric} domain={domain} />
+    </div>
   );
 }
 

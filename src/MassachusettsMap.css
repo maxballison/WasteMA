@@ -1,43 +1,96 @@
 /* src/MassachusettsMap.css */
 
-/* Ensure the map fills its container */
+.map-wrapper {
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+
 .leaflet-container {
-    width: 100%;
-    height: 100%;
-  }
-  
-  /* Legend styles */
-  .info.legend {
-    background-color: white;
-    padding: 10px;
-    font: 14px/16px Roboto;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-    border-radius: 5px;
-  }
-  
-  .info.legend .legend-title {
-    text-align: center;
-    font-weight: bold;
-    margin-bottom: 5px;
-  }
-  
-  .info.legend .legend-bar {
-    width: 100%;
-    height: 20px;
-    background: linear-gradient(to right, #dcf0fb, #081d58);
-    margin-bottom: 5px;
-  }
-  
-  .info.legend .legend-labels {
-    display: flex;
-    justify-content: space-between;
-  }
-  
-  .info.legend .legend-labels span {
-    font-size: 12px;
-  }
-  
-  /* Add transition effect to GeoJSON layers */
-  .leaflet-container .leaflet-interactive {
-    transition: fill-opacity 0.3s, stroke 0.3s, fill 0.3s;
-  }
+  width: 100%;
+  height: 100%;
+  background: #eef2f7;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Legend (React overlay, bottom-left) */
+.map-legend {
+  position: absolute;
+  bottom: 24px;
+  left: 16px;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+  width: 220px;
+  font-family: 'Inter', sans-serif;
+}
+
+.map-legend-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.map-legend-bar {
+  width: 100%;
+  height: 10px;
+  border-radius: 5px;
+  margin-bottom: 4px;
+}
+
+.map-legend-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #475569;
+}
+
+.map-legend-nodata {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: #475569;
+}
+
+.map-legend-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: #e2e8f0;
+  border: 1px solid #cbd5e1;
+}
+
+/* Hover tooltip */
+.muni-tooltip {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #0f172a;
+}
+
+.leaflet-tooltip {
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+  padding: 8px 10px;
+}
+
+/* Smooth color transitions on the polygons */
+.leaflet-container .leaflet-interactive {
+  transition: fill 0.25s ease, fill-opacity 0.25s ease, stroke 0.25s ease;
+}
+
+/* Remove the browser focus rectangle drawn around a clicked polygon */
+.leaflet-container .leaflet-interactive:focus,
+.leaflet-container path:focus,
+.leaflet-container svg:focus {
+  outline: none;
+}
